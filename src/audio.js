@@ -2,6 +2,7 @@
  * This module contains the functions to transcript the audio
  *
  * The audio can be transcripted using two different modes:
+ * - local: using the local transcription system
  * - openai: using the OpenAI transcription API
  *
  * */
@@ -127,8 +128,29 @@ async function transcriptOpenAI(audioFile, openai, lang = null) {
  *
  */
 async function transcriptLocal(audioFile, tmpFile, lang = null) {
-	console.log('Transcripting the audio file locally');
-	throw Error('Local transcription is not implemented yet');
+	command = `python transcription.py ${audioFile} ${tmpFile}`;
+	if (lang !== null) {
+		command += ` --language ${lang}`;
+	}
+	try {
+		const { stdout, stderr } = await asyncExec(command);
+		if (stderr) {
+			console.log(`stderr: ${stderr}`);
+			throw Error(`Error generating the transcription:\n${stderr}`);
+		}
+		console.log(`stdout: ${stdout}`);
+	} catch (error) {
+		const errMsg = `Error while generating the audio transcription\nError: ${error}`;
+		console.log(errMsg);
+		throw Error(errMsg);
+	}
+
+	try {
+		return await fs.promises.readFile(tmpFile, 'utf8');
+	} catch (error) {
+		console.log('Error while generating the transcription');
+		throw Error(`Error: ${error}`);
+	}
 }
 
 module.exports = {
