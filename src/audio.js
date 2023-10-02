@@ -8,7 +8,15 @@
 const fs = require('fs');
 const path = require('path');
 const exec = require('child_process').exec;
+const tmp = require('tmp');
+const util = require('util');
+const { removeFile } = require('./utils.js');
 asyncExec = util.promisify(exec);
+
+const TranscriptModes = {
+	LOCAL: 'local',
+	OPENAI_API: 'openai',
+};
 
 /**
  * Convert the given audio file in .ogg format into
@@ -36,6 +44,46 @@ async function oggToWav(audioFile) {
 	}
 }
 
+/**
+ * Generates the transcription on the given audio
+ *
+ * By default the system will try to guess the language of the audio
+ * the user can provid an specific language to guide the system.
+ *
+ * @param {string} audioFile - File to be transcripted
+ * @param {string} lang - Language of the audio file
+ * @param {string} mode - Mode to use to transcript the audio
+ * @param {string} openai - OpenAI instance
+ *
+ */
+async function transcript(
+	audioFile,
+	lang = null,
+	mode = TranscriptModes.LOCAL,
+	openai = null,
+) {
+	const tmpFile = tmp.tmpNameSync({ postfix: '.txt' });
+
+	switch (mode) {
+		case TranscriptModes.LOCAL:
+			transcription = await transcriptLocal(audioFile, tmpFile, lang);
+			break;
+		case TranscriptModes.OPENAI_API:
+			if (openai === null) {
+				console.log('OpenAI instance is required, please provide it');
+				throw Error('OpenAI instance is not enabled');
+			}
+			transcription = await transcriptOpenAI(audioFile, openai, lang);
+			break;
+		default:
+			console.log('Selected mode do not exist');
+			throw Error(`Transcription mode: ${mode} not in: ${TranscriptModes}`);
+	}
+	// Remove the tmp file is exists
+	removeFile(tmpFile);
+	return transcription;
+}
+
 /*
 /**
  * Generates the transcription on the given audio using the OpenAI
@@ -47,9 +95,10 @@ async function oggToWav(audioFile) {
  *
  */
 async function transcriptOpenAI(audioFile, openai, lang = null) {
+	console.log('Transcripting the audio file using OpenAI API');
 	const prompt =
 		'The transcription must be in the same language than ' +
-		'the audio. The audio language is likel to be catalan (cat) and ' +
+		'the audio. The audio language is likely to be catalan (cat) and ' +
 		'some times spanish (es).';
 	const options = {
 		file: fs.createReadStream(audioFile),
@@ -68,6 +117,24 @@ async function transcriptOpenAI(audioFile, openai, lang = null) {
 	}
 }
 
+/**
+ * Generates the transcription on the given audio using the local
+ * transcription system.
+ *
+ * @param {string} audioFile - File to be transcripted
+ * @param {string} tmpFile - Temporary file to save the transcription
+ * @param {string} lang - Language of the audio file
+ *
+ */
+async function transcriptLocal(audioFile, tmpFile, lang = null) {
+	console.log('Transcripting the audio file locally');
+	throw Error('Local transcription is not implemented yet');
+}
+
 module.exports = {
+	oggToWav,
+	transcript,
+	transcriptLocal,
 	transcriptOpenAI,
+	TranscriptModes,
 };
