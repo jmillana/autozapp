@@ -24,6 +24,21 @@ function loadOpenAIAPI() {
 }
 const openai = loadOpenAIAPI();
 
+/**
+ * Get the help menu
+ * @return {string} - Help menu
+ */
+function getHelpMenu() {
+	const helpMenu =
+		'*Usage:*\n' +
+		'*!ping*: Pong\n' +
+		'*!text* <$> <language>: Transcipt the audio of the attached audio\n' +
+		'    *$*: Use OpenAI API, by default trys to use the local model\n' +
+		'    *language*: Set the language of the audio (en, es, ca, ...)\n' +
+		'*!help*: Show this same menu\n';
+	return helpMenu;
+}
+
 const client = new Client({
 	authStrategy: new LocalAuth(),
 });
@@ -52,6 +67,10 @@ client.on('message', async (msg) => {
 client.on('message_create', async (msg) => {
 	// Fired on all message creations, including your own
 	const contact = await msg.getContact();
+
+	if (msg.body === '!help') {
+		msg.reply(getHelpMenu());
+	}
 
 	console.log(msg.body);
 	if (msg.body === '!ping') {
