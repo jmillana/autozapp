@@ -35,6 +35,11 @@ function getHelpMenu() {
 		'*!text* <$> <language>: Transcipt the audio of the attached audio\n' +
 		'    *$*: Use OpenAI API, by default trys to use the local model\n' +
 		'    *language*: Set the language of the audio (en, es, ca, ...)\n' +
+		'*!tldr*: Summarize the attached message\n' +
+		'*!to* <language>: Translate the attached message to the language\n' +
+		'    *language*: Set the language of the translation\n' +
+		'*!explain* <question>: Explain the attached message\n' +
+		'    *question*: Question to answer\n' +
 		'*!help*: Show this same menu\n';
 	return helpMenu;
 }
@@ -100,6 +105,60 @@ client.on('message_create', async (msg) => {
 			msg.reply(transcription);
 		} catch (error) {
 			console.log('Error:', error);
+		}
+	}
+
+	if (msg.body === '!mucho texto tt' || msg.body === '!tldr') {
+		console.log('Processing summarize request');
+		if (openai === null) {
+			console.log('Cannot summarize without OpenAI API setup');
+			return;
+		}
+		const quotedMsg = await msg.getQuotedMessage();
+		try {
+			const summary = await chat.summarize(quotedMsg.body, openai);
+			quotedMsg.reply(`tldr:\n${summary}`);
+		} catch (error) {
+			console.log('Error:', error);
+			return;
+		}
+	}
+
+	if (msg.body.startsWith('!to')) {
+		if (openai === null) {
+			console.log('Cannot summarize without OpenAI API setup');
+			return;
+		}
+		request = msg.body.split('!to')[1];
+		const quotedMsg = await msg.getQuotedMessage();
+		if (quotedMsg === undefined) {
+			return;
+		}
+		try {
+			const translation = await chat.translate(quotedMsg.body, request, openai);
+			msg.reply(`Translation:\n${translation}`);
+		} catch (error) {
+			console.log('Error:', error);
+			return;
+		}
+	}
+
+	if (msg.body.startsWith('!explain')) {
+		if (openai === null) {
+			console.log('Cannot summarize without OpenAI API setup');
+			return;
+		}
+		question = msg.body.split('!explain')[1];
+		const quotedMsg = await msg.getQuotedMessage();
+		if (quotedMsg === undefined) {
+			return;
+		}
+		try {
+			const explanation = await chat.explain(quotedMsg.body, question, openai);
+			msg.reply(`Explanation:\n${explanation}`);
+		} catch (error) {
+			console.log('Error:', error);
+			return;
 		}
 	}
 });
