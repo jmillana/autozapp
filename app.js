@@ -2,6 +2,7 @@ const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const OpenAI = require('openai');
 
+const chat = require('./src/chat.js');
 const whatsapp = require('./src/whatsapp.js');
 
 require('dotenv').config();
