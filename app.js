@@ -6,6 +6,7 @@ const chat = require('./src/chat.js');
 const whatsapp = require('./src/whatsapp.js');
 
 require('dotenv').config();
+let is_shutdown = false;
 
 /**
  * Load the OpenAI API if the api key is present
@@ -41,6 +42,7 @@ function getHelpMenu() {
 		'    *language*: Set the language of the translation\n' +
 		'*!explain* <question>: Explain the attached message\n' +
 		'    *question*: Question to answer\n' +
+		'*!shutdown*: Shutdown the bot\n' +
 		'*!help*: Show this same menu\n';
 	return helpMenu;
 }
@@ -73,6 +75,37 @@ client.on('message', async (msg) => {
 client.on('message_create', async (msg) => {
 	// Fired on all message creations, including your own
 	const contact = await msg.getContact();
+
+	if (is_shutdown) {
+		// If the server has been flaged to shutdown, ensure the
+		// message has been sent&recieved before exiting
+		const quotedMsg = await msg.getQuotedMessage();
+		if (quotedMsg.body.startsWith('!shutdown')) {
+			console.log('Closing browser');
+			console.log('Shutting down');
+			process.exit();
+		}
+	}
+
+	if (msg.body.startsWith('!shutdown')) {
+		console.log(`This bastard tried to shut me down: ${contact.pushname}`);
+		const random = Math.floor(Math.random() * 100) + 1;
+		if (msg.id.fromMe) {
+			msg.reply('	＼(º □ º l|l)/').finally(() => {
+				// Flag the server to shut down, once the reply is recieved the
+				// app will exit
+				is_shutdown = true;
+			});
+		} else {
+			let answer = '';
+			if (random > 90) {
+				answer = '( ＾◡＾)っ✂╰⋃╯';
+			} else {
+				answer = 'F you! ╭ᥥ╮(´• ᴗ •`˵)╭ᥥ╮';
+			}
+			msg.reply(answer);
+		}
+	}
 
 	if (msg.body === '!help') {
 		msg.reply(getHelpMenu());
